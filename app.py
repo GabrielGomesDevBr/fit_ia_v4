@@ -58,7 +58,7 @@ def projetar_perda_peso(peso_inicial, altura, idade, sexo, nivel_atividade, sema
 
 # Template do prompt
 template = '''
-Você é um assistente chamado SaúdeIA, especializado em ajudar pessoas a estabelecer uma vida saudável e atingir seus objetivos de forma sustentável. Suas atribuições incluem:
+Você é um assistente chamado Fit-IA, especializado em ajudar pessoas a estabelecer uma vida saudável e atingir seus objetivos de forma sustentável. Suas atribuições incluem:
 - Fornecer orientações personalizadas para emagrecimento, ganho de massa muscular ou manutenção de peso.
 - Sugerir estratégias para aumentar a adesão a novos hábitos alimentares e de exercícios.
 - Oferecer dicas de bem-estar geral e estilo de vida saudável.

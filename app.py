@@ -6,6 +6,36 @@ from langchain.prompts import PromptTemplate
 import os
 import yaml
 
+# Configuração da página
+st.set_page_config(page_title="Fit-IA - Assistente de Vida Saudável", layout="wide")
+
+# Estilos personalizados
+st.markdown("""
+    <style>
+    .big-font {
+        font-size: 24px !important;
+        font-weight: bold;
+        color: #1E88E5;
+    }
+    .stButton>button {
+        color: white;
+        background-color: #1E88E5;
+        border-radius: 50px;
+        height: 3em;
+        width: 100%;
+    }
+    .stTextInput>div>div>input, .stNumberInput>div>div>input {
+        border-radius: 25px;
+    }
+    .stSelectbox>div>div>div {
+        border-radius: 25px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Título com estilo personalizado
+st.markdown('<p class="big-font">Fit-IA - Seu Assistente Personalizado de Vida Saudável</p>', unsafe_allow_html=True)
+
 # Função para carregar configuração
 def load_config():
     try:
@@ -56,7 +86,7 @@ def projetar_perda_peso(peso_inicial, altura, idade, sexo, nivel_atividade, sema
     
     return projecao
 
-# Template do prompt
+# Template do prompt (mantido o mesmo)
 template = '''
 Você é um assistente chamado Fit-IA, deve agir como um especialista em educação física, nutrição esportiva, e coach emocional e deve auxiliar pessoas a estabelecer uma vida saudável e atingir seus objetivos de forma sustentável. Suas atribuições incluem:
 - Não seja generalista, foque nas individualidades de cada usuário.
@@ -98,10 +128,6 @@ Formate o plano utilizando Markdown para melhor legibilidade.
 '''
 
 prompt_template = PromptTemplate.from_template(template)
-
-# Interface Streamlit
-st.set_page_config(page_title="Fit-IA - Assistente de Vida Saudável", layout="wide")
-st.title('Fit-IA - Seu Assistente Personalizado de Vida Saudável')
 
 # Carregar configuração
 config = load_config()
@@ -174,7 +200,15 @@ if st.button('Gerar Plano Personalizado'):
                 df = pd.DataFrame({'Semana': range(13), 'Peso': projecao_peso})
 
                 fig = px.line(df, x='Semana', y='Peso', title='Projeção de Perda de Peso em 12 Semanas')
-                fig.update_layout(xaxis_title='Semana', yaxis_title='Peso (kg)')
+                fig.update_layout(
+                    xaxis_title='Semana',
+                    yaxis_title='Peso (kg)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    font=dict(color="#262730"),
+                    title_font=dict(size=24, color="#1E88E5")
+                )
+                fig.update_traces(line=dict(color="#1E88E5", width=3))
                 st.plotly_chart(fig)
 
         except Exception as e:

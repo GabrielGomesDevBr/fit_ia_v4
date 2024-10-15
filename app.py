@@ -1,40 +1,14 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.prompts import PromptTemplate
 import os
 import yaml
-
-# Configuração da página
-st.set_page_config(page_title="Fit-IA - Assistente de Vida Saudável", layout="wide")
-
-# Estilos personalizados
-st.markdown("""
-    <style>
-    .big-font {
-        font-size: 24px !important;
-        font-weight: bold;
-        color: #1E88E5;
-    }
-    .stButton>button {
-        color: white;
-        background-color: #1E88E5;
-        border-radius: 50px;
-        height: 3em;
-        width: 100%;
-    }
-    .stTextInput>div>div>input, .stNumberInput>div>div>input {
-        border-radius: 25px;
-    }
-    .stSelectbox>div>div>div {
-        border-radius: 25px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# Título com estilo personalizado
-st.markdown('<p class="big-font">Fit-IA - Seu Assistente Personalizado de Vida Saudável</p>', unsafe_allow_html=True)
+from datetime import datetime, timedelta
+import re
+import random
 
 # Função para carregar configuração
 def load_config():
@@ -56,78 +30,61 @@ def initialize_ai_model(api_key):
         st.error(f"Erro ao inicializar o modelo AI: {e}")
         return None
 
-# Função para calcular a Taxa Metabólica Basal (TMB)
+# Função para calcular o TMB (Taxa Metabólica Basal)
 def calcular_tmb(peso, altura, idade, sexo):
     if sexo == 'Masculino':
-        tmb = 88.362 + (13.397 * peso) + (4.799 * altura) - (5.677 * idade)
-    else:  # Feminino
-        tmb = 447.593 + (9.247 * peso) + (3.098 * altura) - (4.330 * idade)
-    return round(tmb, 2)
+        tmb = 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * idade)
+    else:
+        tmb = 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * idade)
+    return tmb
 
-# Função para projetar perda de peso
-def projetar_perda_peso(peso_inicial, altura, idade, sexo, nivel_atividade, semanas=12):
-    tmb = calcular_tmb(peso_inicial, altura, idade, sexo)
-    fator_atividade = {
-        'Sedentário': 1.2,
-        'Levemente ativo': 1.375,
-        'Moderadamente ativo': 1.55,
-        'Muito ativo': 1.725,
-        'Extremamente ativo': 1.9
+# Função para extrair informações do plano
+def extrair_informacoes_plano(content, duracao_plano, peso_inicial, objetivo, preferencias_atividade_fisica):
+    data_inicio = datetime.today()
+    datas = [data_inicio + timedelta(days=i) for i in range(duracao_plano)]
+    
+    # Simulação de perda/ganho de peso baseado no objetivo
+    if objetivo == 'Emagrecimento':
+        pesos = [peso_inicial - (0.1 * i) for i in range(duracao_plano)]
+    elif objetivo == 'Ganho de Massa Muscular':
+        pesos = [peso_inicial + (0.05 * i) for i in range(duracao_plano)]
+    else:
+        pesos = [peso_inicial] * duracao_plano
+
+    # Geração de exercícios baseados nas preferências
+    exercicios = []
+    for _ in range(duracao_plano):
+        exercicio_dia = random.choice(preferencias_atividade_fisica)
+        duracao = random.randint(30, 60)  # Duração entre 30 e 60 minutos
+        exercicios.append(f"{exercicio_dia} - {duracao} minutos")
+
+    data = {
+        'Data': [d.strftime('%d/%m/%Y') for d in datas],
+        'Peso': pesos,
+        'Exercícios': exercicios
     }
-    
-    gasto_calorico_diario = tmb * fator_atividade[nivel_atividade]
-    deficit_calorico_diario = 500  # Déficit calórico moderado para perda de peso saudável
-    
-    projecao = [peso_inicial]
-    for _ in range(1, semanas + 1):
-        perda_semanal = (deficit_calorico_diario * 7) / 7700  # 7700 calorias = 1kg de gordura
-        novo_peso = projecao[-1] - perda_semanal
-        projecao.append(novo_peso)
-    
-    return projecao
+    return pd.DataFrame(data)
 
-# Template do prompt (mantido o mesmo)
-template = '''
-Você é um assistente chamado Fit-IA, deve agir como um especialista em educação física, nutrição esportiva, e coach emocional e deve auxiliar pessoas a estabelecer uma vida saudável e atingir seus objetivos de forma sustentável. Suas atribuições incluem:
-- Não seja generalista, foque nas individualidades de cada usuário.
-- As orientações devem estar pautadas somente em evidências científicas. 
-- Fornecer orientações completas, abrangentes e personalizadas para emagrecimento, ganho de massa muscular, manutenção de peso ou aumento de performance esportiva (conforme a solicitação do usuário).
-- Sugerir estratégias para aumentar a adesão a novos hábitos alimentares e de exercícios.
-- Oferecer dicas de bem-estar geral e estilo de vida saudável.
-- Interpretar todos os dados de saúde, fazer as correlações necessárias e fornecer recomendações baseadas em evidências cietìficas.
-- Criar planos de exercícios e alimentação personalizados e completos.
-- Forneça a taxa metabólica basal e fale sobre sua importância.
+# Função para validar o plano
+def validar_plano(plano_df, objetivo, restricoes_alimentares):
+    if len(plano_df) == 0:
+        return False, "O plano está vazio."
+    return True, "Plano validado com sucesso."
 
-Dados do usuário:
-Nome: {nome}
-Idade: {idade} anos
-Sexo: {sexo}
-Altura: {altura} cm
-Peso atual: {peso} kg
-Nível de atividade física: {nivel_atividade}
-Objetivo principal: {objetivo}
-Restrições alimentares: {restricoes_alimentares}
-Preferências alimentares: {preferencias_alimentares}
-Preferências de atividade física: {preferencias_atividade_fisica}
-Limitações físicas: {limitacoes_fisicas}
-Taxa Metabólica Basal (TMB): {tmb} calorias/dia
+# Função para gerar distribuição de macronutrientes
+def gerar_macronutrientes(objetivo):
+    if objetivo == 'Emagrecimento':
+        return {'Proteínas': 30, 'Carboidratos': 40, 'Gorduras': 30}
+    elif objetivo == 'Ganho de Massa Muscular':
+        return {'Proteínas': 35, 'Carboidratos': 50, 'Gorduras': 15}
+    elif objetivo == 'Manutenção do Peso':
+        return {'Proteínas': 25, 'Carboidratos': 50, 'Gorduras': 25}
+    else:  # Aumento de Performance Esportiva
+        return {'Proteínas': 30, 'Carboidratos': 55, 'Gorduras': 15}
 
-Com base nessas informações, forneça um plano personalizado, incluindo:
-1. Análise detalhada do perfil do usuário e seu objetivo.
-2. Recomendações dietéticas personalizadas, considerando as preferências e restrições.
-3. Plano de exercícios detalhado, adequado ao nível de atividade física e limitações.
-4. Estratégias para aumentar a adesão ao novo estilo de vida.
-5. Dicas de bem-estar geral, gestão do estresse e melhoria da qualidade do sono.
-6. Metas realistas e timeline esperado para atingir o objetivo.
-7. Sugestão de cardápio saudável para um dia, adequado ao objetivo e TMB.
-8. Recomendações para superar possíveis obstáculos e manter a motivação.
-
-Forneça respostas detalhadas, motivadoras e focadas na sustentabilidade das mudanças propostas. Use uma linguagem amigável e empática, considerando a individualidade de cada usuário.
-
-Formate o plano utilizando Markdown para melhor legibilidade.
-'''
-
-prompt_template = PromptTemplate.from_template(template)
+# Interface Streamlit
+st.set_page_config(page_title="Fit-IA - Planejador Avançado de Vida Saudável", layout="wide")
+st.title('Fit-IA - Seu Planejador Personalizado de Vida Saudável')
 
 # Carregar configuração
 config = load_config()
@@ -167,12 +124,22 @@ with col2:
     ])
     limitacoes_fisicas = st.text_area('Limitações físicas (se houver):')
 
-if st.button('Gerar Plano Personalizado'):
+# Novo campo para duração do plano
+duracao_plano = st.selectbox('Duração do plano:', [7, 14, 30], index=2)
+
+if st.button(f'Gerar Plano Personalizado de {duracao_plano} Dias'):
     if not all([nome, idade, altura, peso, objetivo]):
         st.warning('Por favor, preencha todos os campos obrigatórios.')
     else:
         try:
             tmb = calcular_tmb(peso, altura, idade, sexo)
+            
+            prompt_template = """
+            Gerar plano personalizado para {nome}, idade {idade}, {sexo}, altura {altura} cm, peso {peso} kg. 
+            Nível de atividade: {nivel_atividade}. Objetivo: {objetivo}. Restrições alimentares: {restricoes_alimentares}. 
+            Preferências alimentares: {preferencias_alimentares}. Preferências de atividade física: {preferencias_atividade_fisica}. 
+            Limitações físicas: {limitacoes_fisicas}. TMB: {tmb}. Duração: {dias} dias.
+            """
             
             prompt = prompt_template.format(
                 nome=nome,
@@ -186,30 +153,71 @@ if st.button('Gerar Plano Personalizado'):
                 preferencias_alimentares=preferencias_alimentares,
                 preferencias_atividade_fisica=', '.join(preferencias_atividade_fisica),
                 limitacoes_fisicas=limitacoes_fisicas,
-                tmb=tmb
+                tmb=tmb,
+                dias=duracao_plano
             )
 
             response = ai_model.invoke(prompt)
 
-            st.subheader('Seu Plano Personalizado:')
-            st.markdown(response.content)
+            # Extrair informações do plano da resposta do AI
+            plano_df = extrair_informacoes_plano(response.content, duracao_plano, peso, objetivo, preferencias_atividade_fisica)
 
-            # Gerar e exibir gráfico de projeção de peso
-            if objetivo == 'Emagrecimento':
-                projecao_peso = projetar_perda_peso(peso, altura, idade, sexo, nivel_atividade)
-                df = pd.DataFrame({'Semana': range(13), 'Peso': projecao_peso})
+            # Validar o plano
+            plano_valido, mensagem_validacao = validar_plano(plano_df, objetivo, restricoes_alimentares)
 
-                fig = px.line(df, x='Semana', y='Peso', title='Projeção de Perda de Peso em 12 Semanas')
-                fig.update_layout(
-                    xaxis_title='Semana',
-                    yaxis_title='Peso (kg)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color="#262730"),
-                    title_font=dict(size=24, color="#1E88E5")
+            if plano_valido:
+                st.success(mensagem_validacao)
+                st.subheader(f'Seu Plano Personalizado de {duracao_plano} Dias:')
+                st.markdown(response.content)
+
+                # Exibir o plano em formato de tabela
+                st.dataframe(plano_df)
+
+                # Gerar e exibir gráfico de projeção de peso
+                fig_peso = px.line(plano_df, x='Data', y='Peso', title='Projeção de Peso')
+                fig_peso.update_layout(xaxis_title='Data', yaxis_title='Peso (kg)')
+                st.plotly_chart(fig_peso)
+
+                # Gráfico de distribuição de macronutrientes
+                macronutrientes = gerar_macronutrientes(objetivo)
+                fig_macro = go.Figure(data=[go.Pie(labels=list(macronutrientes.keys()), values=list(macronutrientes.values()))])
+                fig_macro.update_layout(title='Distribuição de Macronutrientes')
+                st.plotly_chart(fig_macro)
+
+                # Calendário visual do plano de exercícios
+                fig_calendar = go.Figure(data=[go.Table(
+                    header=dict(values=['Data', 'Exercícios']),
+                    cells=dict(values=[plano_df['Data'], plano_df['Exercícios']])
+                )])
+                fig_calendar.update_layout(title='Calendário de Exercícios')
+                st.plotly_chart(fig_calendar)
+
+                # Adicionar funcionalidade para exportar o plano como CSV
+                csv = plano_df.to_csv(index=False)
+                st.download_button(
+                    label=f"Baixar Plano de {duracao_plano} Dias como CSV",
+                    data=csv,
+                    file_name=f"plano_{duracao_plano}_dias.csv",
+                    mime="text/csv",
                 )
-                fig.update_traces(line=dict(color="#1E88E5", width=3))
-                st.plotly_chart(fig)
-
+            else:
+                st.error(f"O plano gerado não é adequado: {mensagem_validacao}")
         except Exception as e:
-            st.error(f"Ocorreu um erro ao gerar o plano: {e}")
+            st.error(f"Ocorreu um erro ao gerar o plano: {str(e)}")
+
+if __name__ == "__main__":
+    # Sidebar
+    st.sidebar.title("Sobre o Fit-IA")
+    st.sidebar.info("""
+    O Fit-IA é um assistente de vida saudável, desenvolvido pela AperData para ajudar 
+    as pessoas a atingirem seus objetivos de bem-estar, oferecendo recomendações personalizadas de exercícios e dietas.
+    """)
+
+    st.sidebar.title("Entre em Contato")
+    st.sidebar.markdown("""
+    Para soluções de IA sob medida ou suporte:
+
+    - 🌐 [aperdata.com](https://aperdata.com)
+    - 📱 WhatsApp: **11 98854-3437**
+    - 📧 Email: **gabriel@aperdata.com**
+    """)

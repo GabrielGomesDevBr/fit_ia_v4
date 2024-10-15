@@ -83,7 +83,7 @@ def gerar_macronutrientes(objetivo):
         return {'Proteínas': 30, 'Carboidratos': 55, 'Gorduras': 15}
 
 # Interface Streamlit
-st.set_page_config(page_title="Fit-IA - Planejador Avançado de Vida Saudável", layout="wide")
+st.set_page_config(page_title="Fit-IA - Planejador Avançado de Vida Saudável", layout="wide", page_icon="🍎")
 st.title('Fit-IA - Seu Planejador Personalizado de Vida Saudável')
 
 # Carregar configuração

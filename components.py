@@ -1,7 +1,6 @@
 import streamlit as st
 from streamlit_option_menu import option_menu
 from streamlit_lottie import st_lottie
-import hydralit_components as hc
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -39,6 +38,9 @@ def setup_page_config(config):
         .stSelectbox>div>div>div {
             border-radius: 10px;
         }
+        .stProgress > div > div > div > div {
+            background-color: #FF4B4B;
+        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -54,13 +56,18 @@ def create_navigation():
         styles={
             "container": {"padding": "0!important", "background-color": "#fafafa"},
             "icon": {"color": "#FF4B4B", "font-size": "25px"}, 
-            "nav-link": {"font-size": "16px", "text-align": "center", "margin":"0px", "--hover-color": "#eee"},
+            "nav-link": {
+                "font-size": "16px", 
+                "text-align": "center", 
+                "margin":"0px", 
+                "--hover-color": "#eee"
+            },
             "nav-link-selected": {"background-color": "#FF4B4B"},
         }
     )
     return selected
 
-ddef show_welcome_page(lottie_fitness=None):
+def show_welcome_page(lottie_fitness=None):
     """Exibe página inicial"""
     col1, col2 = st.columns([2, 1])
     
@@ -99,13 +106,15 @@ def create_user_profile_form():
             sexo = st.selectbox('Sexo:', ['Masculino', 'Feminino'])
             altura = st.number_input('Altura (cm):', min_value=100, max_value=250, step=1)
             peso = st.number_input('Peso atual (kg):', min_value=30.0, max_value=300.0, step=0.1)
-        
-        with col2:
+
+with col2:
             nivel_atividade = st.selectbox('Nível de atividade física:', [
-                'Sedentário', 'Levemente ativo', 'Moderadamente ativo', 'Muito ativo', 'Extremamente ativo'
+                'Sedentário', 'Levemente ativo', 'Moderadamente ativo', 
+                'Muito ativo', 'Extremamente ativo'
             ])
             objetivo = st.selectbox('Objetivo principal:', [
-                'Emagrecimento', 'Ganho de Massa Muscular', 'Manutenção do Peso', 'Aumento de Performance Esportiva'
+                'Emagrecimento', 'Ganho de Massa Muscular', 
+                'Manutenção do Peso', 'Aumento de Performance Esportiva'
             ])
             restricoes = st.multiselect('Restrições alimentares:', [
                 'Nenhuma', 'Vegetariano', 'Vegano', 'Sem Glúten', 'Sem Lactose',
@@ -116,7 +125,11 @@ def create_user_profile_form():
                 'Yoga', 'Pilates', 'Esportes Coletivos', 'Dança', 'Artes Marciais'
             ])
             
-        submit_button = st.form_submit_button(label='Salvar Perfil')
+        submit_button = st.form_submit_button(
+            label='Salvar Perfil',
+            help='Clique para salvar seu perfil e gerar seu plano personalizado'
+        )
+        
         return submit_button, {
             'nome': nome, 'idade': idade, 'sexo': sexo, 'altura': altura,
             'peso': peso, 'nivel_atividade': nivel_atividade, 'objetivo': objetivo,
@@ -125,7 +138,6 @@ def create_user_profile_form():
 
 def display_plan(plan_df, meal_plan):
     """Exibe o plano gerado"""
-    # Tabs para diferentes aspectos do plano
     tab1, tab2, tab3 = st.tabs(['📊 Visão Geral', '🏋️ Treinos', '🍎 Nutrição'])
     
     with tab1:
@@ -137,28 +149,26 @@ def display_plan(plan_df, meal_plan):
         with col3:
             st.metric("Carboidratos", f"{meal_plan['carbs']}g")
             
-        # Gráfico de projeção de peso
         fig_weight = px.line(plan_df, x='Data', y='Peso Estimado',
                            title='Projeção de Peso',
                            labels={'Peso Estimado': 'Peso (kg)'})
         st.plotly_chart(fig_weight, use_container_width=True)
     
     with tab2:
-        # Calendário de treinos
         st.dataframe(
             plan_df[['Data', 'Exercício', 'Duração (min)', 'Intensidade']],
             use_container_width=True
         )
         
-        # Gráfico de distribuição de exercícios
         exercise_dist = plan_df['Exercício'].value_counts()
-        fig_exercises = px.pie(values=exercise_dist.values,
-                             names=exercise_dist.index,
-                             title='Distribuição dos Exercícios')
+        fig_exercises = px.pie(
+            values=exercise_dist.values,
+            names=exercise_dist.index,
+            title='Distribuição dos Exercícios'
+        )
         st.plotly_chart(fig_exercises)
     
     with tab3:
-        # Gráfico de macronutrientes
         fig_macro = go.Figure(data=[go.Pie(
             labels=['Proteínas', 'Carboidratos', 'Gorduras'],
             values=[meal_plan['protein'] * 4,
@@ -175,7 +185,6 @@ def show_progress(historical_data=None):
         st.info("Ainda não há dados de progresso registrados.")
         return
     
-    # Métricas de progresso
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Peso Inicial", f"{historical_data['peso_inicial']} kg")
@@ -192,8 +201,8 @@ def show_about():
             <h1>Sobre o Fit-IA</h1>
             <p style='font-size: 1.2rem;'>
                 O Fit-IA é um assistente de vida saudável desenvolvido pela AperData,
-                utilizando inteligência artificial avançada para criar planos personalizados
-                de exercícios e nutrição.
+                utilizando inteligência artificial avançada para criar planos 
+                personalizados de exercícios e nutrição.
             </p>
         </div>
     """, unsafe_allow_html=True)

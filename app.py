@@ -1,15 +1,25 @@
 import streamlit as st
 from datetime import datetime
 from utils import (
-    load_config, load_lottie_url, initialize_ai_model,
-    calculate_bmr, calculate_tdee, generate_meal_plan,
-    generate_workout_plan, format_plan_data
+    load_config, 
+    load_lottie_url, 
+    initialize_ai_model,
+    calculate_bmr, 
+    calculate_tdee, 
+    generate_meal_plan,
+    generate_workout_plan, 
+    format_plan_data
 )
 from components import (
-    setup_page_config, create_navigation, show_welcome_page,
-    create_user_profile_form, display_plan, show_progress,
+    setup_page_config, 
+    create_navigation, 
+    show_welcome_page,
+    create_user_profile_form, 
+    display_plan, 
+    show_progress,
     show_about
 )
+
 
 # Inicialização da sessão
 if 'profile' not in st.session_state:

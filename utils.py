@@ -11,10 +11,77 @@ def initialize_ai_model(api_key: str) -> ChatGoogleGenerativeAI:
     """Inicializa o modelo AI do Google."""
     try:
         os.environ['GOOGLE_API_KEY'] = api_key
-        return ChatGoogleGenerativeAI(model='gemini-pro')
+        return ChatGoogleGenerativeAI(model='gemini-pro',
+                                    temperature=0.7,
+                                    top_p=0.9,
+                                    top_k=40,
+                                    max_output_tokens=2048)
     except Exception as e:
         raise Exception(f"Erro ao inicializar o modelo AI: {e}")
 
+def gerar_prompt_ia(dados_usuario: Dict) -> str:
+    """Gera um prompt detalhado para a IA baseado nos dados do usuário."""
+    return f"""
+    Como nutricionista e personal trainer especializado, crie um plano detalhado para {dados_usuario['nome']}.
+    
+    Perfil:
+    - Idade: {dados_usuario['idade']} anos
+    - Sexo: {dados_usuario['sexo']}
+    - Altura: {dados_usuario['altura']} cm
+    - Peso: {dados_usuario['peso']} kg
+    - Nível de atividade: {dados_usuario['nivel_atividade']}
+    - Objetivo: {dados_usuario['objetivo']}
+    - Restrições alimentares: {', '.join(dados_usuario['restricoes'])}
+    - Preferências alimentares: {dados_usuario['preferencias_alimentares']}
+    - Limitações físicas: {dados_usuario['limitacoes']}
+    
+    Por favor, forneça:
+    1. RECOMENDAÇÕES NUTRICIONAIS:
+    - Sugestão de 3 opções de café da manhã
+    - Sugestão de 3 opções de almoço
+    - Sugestão de 3 opções de jantar
+    - 5 opções de lanches saudáveis
+    - Alimentos a serem evitados
+    
+    2. DICAS DE TREINO:
+    - Melhores exercícios para o objetivo
+    - Frequência recomendada
+    - Intensidade ideal
+    - Precauções específicas
+    
+    3. RECOMENDAÇÕES GERAIS:
+    - Dicas de hidratação
+    - Sugestões de suplementação (se necessário)
+    - Dicas de descanso e recuperação
+    - Estratégias para manter a motivação
+    
+    4. METAS E MARCOS:
+    - Objetivos semanais realistas
+    - Indicadores de progresso
+    - Ajustes recomendados ao longo do tempo
+    
+    Por favor, organize as informações de forma clara e estruturada usando markdown para formatação.
+    """
+
+def processar_resposta_ia(resposta: str) -> Dict:
+    """Processa a resposta da IA e organiza em seções."""
+    try:
+        # Divide a resposta em seções principais
+        sections = {
+            'nutricao': {},
+            'treino': [],
+            'recomendacoes': [],
+            'metas': []
+        }
+        
+        # Extrai seções usando regex ou split
+        # Implementar lógica de parsing baseada no formato da resposta
+        # Retorna um dicionário estruturado com as informações
+        
+        return sections
+    except Exception as e:
+        print(f"Erro ao processar resposta da IA: {e}")
+        return {}
 def calcular_tmb(peso: float, altura: float, idade: int, sexo: str) -> float:
     """Calcula a Taxa Metabólica Basal usando a fórmula de Harris-Benedict."""
     if sexo == 'Masculino':

@@ -42,11 +42,24 @@ def calcular_calorias_diarias(tmb: float, nivel_atividade: str, objetivo: str) -
     
     return calorias_base + ajustes_objetivo[objetivo]
 
+def calcular_peso_projetado(peso_inicial: float, objetivo: str, dia: int) -> float:
+    """Calcula o peso projetado baseado no objetivo e dia do plano."""
+    if 'Emagrecimento' in objetivo:
+        # Perda de 0.5kg por semana
+        return peso_inicial - (0.5 * dia / 7)
+    elif 'Ganho de Massa' in objetivo:
+        # Ganho de 0.25kg por semana
+        return peso_inicial + (0.25 * dia / 7)
+    else:
+        # Manutenção ou Performance
+        return peso_inicial
+
 def criar_plano_treino(
     preferencias: List[str], 
     duracao_plano: int, 
     objetivo: str,
-    limitacoes: str
+    limitacoes: str,
+    peso_inicial: float
 ) -> List[Dict]:
     """Cria um plano de treino personalizado."""
     plano_treino = []
@@ -63,14 +76,17 @@ def criar_plano_treino(
             intensidade = random.choice(['Moderada', 'Alta'])
             duracao = random.randint(45, 75)
         
-        exercicio = random.choice(preferencias)
+        exercicio = random.choice(preferencias) if preferencias else 'Caminhada 🚶‍♂️'
+        
+        peso_projetado = calcular_peso_projetado(peso_inicial, objetivo, dia)
         
         plano_treino.append({
             'data': data.strftime('%d/%m/%Y'),
             'dia_semana': dia_semana,
             'exercicio': exercicio,
             'intensidade': intensidade,
-            'duracao': duracao
+            'duracao': duracao,
+            'peso_projetado': round(peso_projetado, 2)
         })
     
     return plano_treino

@@ -1,111 +1,124 @@
-import yaml
-import streamlit as st
-import requests
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import random
-import pandas as pd
-from langchain_google_genai import ChatGoogleGenerativeAI
+from typing import Dict, List, Tuple
 import os
+from langchain_google_genai import ChatGoogleGenerativeAI
 
-def load_config():
-    """Carrega as configurações do arquivo YAML"""
-    try:
-        with open('config.yaml', 'r') as file:
-            return yaml.safe_load(file)
-    except Exception as e:
-        st.error(f"Erro ao carregar configurações: {e}")
-        return None
-
-def load_lottie_url(url: str):
-    """Carrega animação Lottie da URL"""
-    try:
-        r = requests.get(url)
-        if r.status_code != 200:
-            return None
-        return r.json()
-    except Exception:
-        return None
-
-def initialize_ai_model(api_key):
-    """Inicializa o modelo AI"""
+def initialize_ai_model(api_key: str) -> ChatGoogleGenerativeAI:
+    """Inicializa o modelo AI do Google."""
     try:
         os.environ['GOOGLE_API_KEY'] = api_key
         return ChatGoogleGenerativeAI(model='gemini-pro')
     except Exception as e:
-        st.error(f"Erro ao inicializar modelo AI: {e}")
-        return None
+        raise Exception(f"Erro ao inicializar o modelo AI: {e}")
 
-def calculate_bmr(weight, height, age, gender):
-    """Calcula Taxa Metabólica Basal usando fórmula de Harris-Benedict"""
-    if gender == 'Masculino':
-        return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
-    return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
+def calcular_tmb(peso: float, altura: float, idade: int, sexo: str) -> float:
+    """Calcula a Taxa Metabólica Basal usando a fórmula de Harris-Benedict."""
+    if sexo == 'Masculino':
+        return 88.36 + (13.4 * peso) + (4.8 * altura) - (5.7 * idade)
+    return 447.6 + (9.2 * peso) + (3.1 * altura) - (4.3 * idade)
 
-def calculate_tdee(bmr, activity_level, config):
-    """Calcula Gasto Energético Total Diário"""
-    factors = config['activity_levels']
-    return bmr * factors.get(activity_level, 1.2)
-
-def generate_meal_plan(tdee, goal, restrictions):
-    """Gera plano alimentar básico baseado no TDEE"""
-    if goal == 'Emagrecimento':
-        calories = tdee - 500
-    elif goal == 'Ganho de Massa Muscular':
-        calories = tdee + 300
-    else:
-        calories = tdee
-    
-    # Distribuição de macronutrientes
-    macros = {
-        'Emagrecimento': {'protein': 0.3, 'carbs': 0.4, 'fats': 0.3},
-        'Ganho de Massa Muscular': {'protein': 0.35, 'carbs': 0.5, 'fats': 0.15},
-        'Manutenção': {'protein': 0.25, 'carbs': 0.5, 'fats': 0.25}
+def calcular_calorias_diarias(tmb: float, nivel_atividade: str, objetivo: str) -> float:
+    """Calcula as calorias diárias baseadas no TMB, nível de atividade e objetivo."""
+    fatores_atividade = {
+        'Sedentário 🛋️': 1.2,
+        'Levemente ativo 🚶': 1.375,
+        'Moderadamente ativo 🏃': 1.55,
+        'Muito ativo 🏋️': 1.725,
+        'Extremamente ativo 🏊‍♂️': 1.9
     }
     
-    dist = macros.get(goal, macros['Manutenção'])
+    calorias_base = tmb * fatores_atividade[nivel_atividade]
     
-    return {
-        'calories': round(calories),
-        'protein': round((calories * dist['protein']) / 4),  # 4 cal/g proteína
-        'carbs': round((calories * dist['carbs']) / 4),      # 4 cal/g carb
-        'fats': round((calories * dist['fats']) / 9)         # 9 cal/g gordura
+    ajustes_objetivo = {
+        'Emagrecimento 📉': -500,
+        'Ganho de Massa 💪': 500,
+        'Manutenção ⚖️': 0,
+        'Performance 🎯': 300
     }
-
-def generate_workout_plan(preferences, limitations, goal, days):
-    """Gera plano de treino personalizado"""
-    available_exercises = preferences if preferences else ['Caminhada', 'Alongamento']
     
-    workout_plan = []
-    for _ in range(days):
-        exercise = random.choice(available_exercises)
-        duration = random.randint(30, 60)
-        workout_plan.append({
-            'exercise': exercise,
-            'duration': duration,
-            'intensity': 'Moderada'
+    return calorias_base + ajustes_objetivo[objetivo]
+
+def criar_plano_treino(
+    preferencias: List[str], 
+    duracao_plano: int, 
+    objetivo: str,
+    limitacoes: str
+) -> List[Dict]:
+    """Cria um plano de treino personalizado."""
+    plano_treino = []
+    dias_semana = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
+    
+    for dia in range(duracao_plano):
+        data = datetime.today() + timedelta(days=dia)
+        dia_semana = dias_semana[data.weekday()]
+        
+        if dia_semana in ['Sábado', 'Domingo']:
+            intensidade = 'Leve'
+            duracao = random.randint(30, 45)
+        else:
+            intensidade = random.choice(['Moderada', 'Alta'])
+            duracao = random.randint(45, 75)
+        
+        exercicio = random.choice(preferencias)
+        
+        plano_treino.append({
+            'data': data.strftime('%d/%m/%Y'),
+            'dia_semana': dia_semana,
+            'exercicio': exercicio,
+            'intensidade': intensidade,
+            'duracao': duracao
         })
     
-    return workout_plan
+    return plano_treino
 
-def format_plan_data(workouts, start_date, initial_weight, goal):
-    """Formata dados do plano para DataFrame"""
-    dates = [start_date + timedelta(days=i) for i in range(len(workouts))]
-    
-    # Simula progressão de peso baseada no objetivo
-    weight_progression = []
-    for i in range(len(workouts)):
-        if goal == 'Emagrecimento':
-            weight = initial_weight - (0.5 * i / 7)  # Perda de 0.5kg por semana
-        elif goal == 'Ganho de Massa Muscular':
-            weight = initial_weight + (0.25 * i / 7)  # Ganho de 0.25kg por semana
-        else:
-            weight = initial_weight
-        weight_progression.append(round(weight, 2))
-    
-    return pd.DataFrame({
-        'Data': [d.strftime('%d/%m/%Y') for d in dates],
-        'Peso Estimado': weight_progression,
-        'Exercício': [w['exercise'] for w in workouts],
-        'Duração (min)': [w['duration'] for w in workouts],
-        'Intensidade': [w['intensity'] for w in workouts]
-    })
+def gerar_graficos_plano(
+    plano_df: pd.DataFrame,
+    peso_inicial: float,
+    objetivo: str,
+    macronutrientes: Dict
+) -> Tuple[go.Figure, go.Figure, go.Figure]:
+    """Gera os gráficos do plano."""
+    # Gráfico de projeção de peso
+    fig_peso = px.line(plano_df, x='data', y='peso_projetado',
+                       title='📈 Projeção de Evolução do Peso',
+                       template='plotly_white')
+    fig_peso.update_layout(
+        xaxis_title='Data',
+        yaxis_title='Peso (kg)',
+        showlegend=True,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+
+    # Gráfico de macronutrientes
+    fig_macro = go.Figure(data=[go.Pie(
+        labels=list(macronutrientes.keys()),
+        values=list(macronutrientes.values()),
+        hole=.3,
+        marker_colors=['#FF6B6B', '#4ECDC4', '#45B7D1']
+    )])
+    fig_macro.update_layout(
+        title='🥗 Distribuição de Macronutrientes',
+        template='plotly_white',
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+
+    # Gráfico de intensidade dos treinos
+    fig_treinos = px.bar(plano_df, x='data', y='duracao',
+                        color='intensidade',
+                        title='💪 Intensidade dos Treinos',
+                        template='plotly_white')
+    fig_treinos.update_layout(
+        xaxis_title='Data',
+        yaxis_title='Duração (minutos)',
+        showlegend=True,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)'
+    )
+
+    return fig_peso, fig_macro, fig_treinos

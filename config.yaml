@@ -15,9 +15,9 @@ style:
 
 # URLs das animações Lottie
 animations:
-  fitness: "https://assets2.lottiefiles.com/packages/lf20_v4isjbj1.json"
-  nutrition: "https://assets5.lottiefiles.com/packages/lf20_yjh6sxqn.json"
-  wellness: "https://assets4.lottiefiles.com/private_files/lf30_HdANfv.json"
+  fitness: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_fitness.json"
+  nutrition: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_nutrition.json"
+  wellness: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_wellness.json"
 
 # Níveis de atividade física e seus fatores
 activity_levels:

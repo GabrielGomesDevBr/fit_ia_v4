@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import datetime
-import json
 from utils import (
     load_config, load_lottie_url, initialize_ai_model,
     calculate_bmr, calculate_tdee, generate_meal_plan,
@@ -26,28 +25,24 @@ if not config:
     st.error("Erro ao carregar configurações. Por favor, verifique o arquivo config.yaml")
     st.stop()
 
-# Setup da página
-setup_page_config(config)
-
-# Carregamento das animações (com tratamento de erro)
+# Carregamento das animações
 try:
     lottie_fitness = load_lottie_url(config['animations']['fitness'])
     lottie_nutrition = load_lottie_url(config['animations']['nutrition'])
-    lottie_wellness = load_lottie_url(config['animations']['wellness'])
 except Exception as e:
     lottie_fitness = None
     lottie_nutrition = None
-    lottie_wellness = None
     st.warning("Algumas animações podem não estar disponíveis.")
 
 # Inicialização do modelo AI
 try:
     ai_model = initialize_ai_model(config['GOOGLE_API_KEY'])
-    if not ai_model:
-        st.warning("Modelo AI não disponível. Algumas funcionalidades podem estar limitadas.")
 except Exception as e:
     ai_model = None
     st.warning("Modelo AI não disponível. Algumas funcionalidades podem estar limitadas.")
+
+# Setup da página
+setup_page_config(config)
 
 # Navegação principal
 selected_page = create_navigation()
@@ -91,7 +86,7 @@ elif selected_page == "Perfil":
         # Gerar plano de treino
         workout_plan = generate_workout_plan(
             profile_data['preferencias'],
-            None,  # limitações físicas (a ser implementado)
+            None,  # limitações físicas
             profile_data['objetivo'],
             30  # dias do plano
         )
@@ -143,11 +138,10 @@ elif selected_page == "Progresso":
     else:
         st.markdown("<h2>Seu Progresso</h2>", unsafe_allow_html=True)
         
-        # Aqui você pode implementar a lógica para mostrar o progresso
-        # Por enquanto, vamos mostrar apenas dados simulados
+        # Dados simulados de progresso
         historical_data = {
             'peso_inicial': st.session_state.profile['peso'],
-            'peso_atual': st.session_state.profile['peso'] - 0.5  # Simulação
+            'peso_atual': st.session_state.profile['peso'] - 0.5
         }
         
         show_progress(historical_data)
@@ -180,3 +174,8 @@ with st.sidebar:
         📱 WhatsApp: (11) 98854-3437  
         📧 Email: gabriel@aperdata.com
     """)
+
+# Tratamento de erros globais
+if 'error' in st.session_state:
+    st.error(st.session_state.error)
+    del st.session_state.error

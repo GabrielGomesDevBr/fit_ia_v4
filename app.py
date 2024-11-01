@@ -29,16 +29,25 @@ if not config:
 # Setup da página
 setup_page_config(config)
 
-# Carregamento das animações
-lottie_fitness = load_lottie_url(config['animations']['fitness'])
-lottie_nutrition = load_lottie_url(config['animations']['nutrition'])
-lottie_wellness = load_lottie_url(config['animations']['wellness'])
+# Carregamento das animações (com tratamento de erro)
+try:
+    lottie_fitness = load_lottie_url(config['animations']['fitness'])
+    lottie_nutrition = load_lottie_url(config['animations']['nutrition'])
+    lottie_wellness = load_lottie_url(config['animations']['wellness'])
+except Exception as e:
+    lottie_fitness = None
+    lottie_nutrition = None
+    lottie_wellness = None
+    st.warning("Algumas animações podem não estar disponíveis.")
 
 # Inicialização do modelo AI
-ai_model = initialize_ai_model(config['GOOGLE_API_KEY'])
-if not ai_model:
-    st.error("Erro ao inicializar o modelo AI. Por favor, verifique sua chave API.")
-    st.stop()
+try:
+    ai_model = initialize_ai_model(config['GOOGLE_API_KEY'])
+    if not ai_model:
+        st.warning("Modelo AI não disponível. Algumas funcionalidades podem estar limitadas.")
+except Exception as e:
+    ai_model = None
+    st.warning("Modelo AI não disponível. Algumas funcionalidades podem estar limitadas.")
 
 # Navegação principal
 selected_page = create_navigation()

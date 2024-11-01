@@ -1,25 +1,20 @@
 GOOGLE_API_KEY: "AIzaSyDq5j7lJnNJJxF7TFEkWqZHGfHIT8FpCZM"
 
-# Configurações da aplicação
 app_config:
-  title: "Fit-IA - Planejador Avançado de Vida Saudável"
+  title: "Fit-IA - Planejador de Vida Saudável"
   icon: "🍎"
   version: "2.0.0"
 
-# Configurações de estilo
 style:
   primary_color: "#FF4B4B"
   secondary_color: "#0083B8"
   background_color: "#FFFFFF"
   text_color: "#333333"
 
-# URLs das animações Lottie
 animations:
   fitness: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_fitness.json"
   nutrition: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_nutrition.json"
-  wellness: "https://raw.githubusercontent.com/LottieFiles/lottie-web/master/demo/simple_wellness.json"
 
-# Níveis de atividade física e seus fatores
 activity_levels:
   Sedentário: 1.2
   "Levemente ativo": 1.375

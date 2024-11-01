@@ -60,7 +60,7 @@ def create_navigation():
     )
     return selected
 
-def show_welcome_page(lottie_fitness):
+ddef show_welcome_page(lottie_fitness=None):
     """Exibe página inicial"""
     col1, col2 = st.columns([2, 1])
     
@@ -83,7 +83,10 @@ def show_welcome_page(lottie_fitness):
         """, unsafe_allow_html=True)
         
     with col2:
-        st_lottie(lottie_fitness, height=300, key="welcome")
+        if lottie_fitness:
+            st_lottie(lottie_fitness, height=300, key="welcome")
+        else:
+            st.image("https://via.placeholder.com/300x300.png?text=Fit-IA", width=300)
 
 def create_user_profile_form():
     """Cria formulário de perfil do usuário"""

@@ -21,11 +21,9 @@ def load_lottie_url(url: str):
     try:
         r = requests.get(url)
         if r.status_code != 200:
-            st.warning(f"Não foi possível carregar a animação.")
             return None
         return r.json()
-    except Exception as e:
-        st.warning(f"Não foi possível carregar a animação.")
+    except Exception:
         return None
 
 def initialize_ai_model(api_key):
@@ -38,13 +36,13 @@ def initialize_ai_model(api_key):
         return None
 
 def calculate_bmr(weight, height, age, gender):
-    """Calcula Taxa Metabólica Basal (BMR) usando fórmula de Harris-Benedict"""
+    """Calcula Taxa Metabólica Basal usando fórmula de Harris-Benedict"""
     if gender == 'Masculino':
         return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
     return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
 
 def calculate_tdee(bmr, activity_level, config):
-    """Calcula Gasto Energético Total Diário (TDEE)"""
+    """Calcula Gasto Energético Total Diário"""
     factors = config['activity_levels']
     return bmr * factors.get(activity_level, 1.2)
 
@@ -58,24 +56,19 @@ def generate_meal_plan(tdee, goal, restrictions):
         calories = tdee
     
     # Distribuição de macronutrientes
-    if goal == 'Emagrecimento':
-        protein = 0.3  # 30% das calorias
-        carbs = 0.4    # 40% das calorias
-        fats = 0.3     # 30% das calorias
-    elif goal == 'Ganho de Massa Muscular':
-        protein = 0.35 # 35% das calorias
-        carbs = 0.5    # 50% das calorias
-        fats = 0.15    # 15% das calorias
-    else:
-        protein = 0.25 # 25% das calorias
-        carbs = 0.5    # 50% das calorias
-        fats = 0.25    # 25% das calorias
+    macros = {
+        'Emagrecimento': {'protein': 0.3, 'carbs': 0.4, 'fats': 0.3},
+        'Ganho de Massa Muscular': {'protein': 0.35, 'carbs': 0.5, 'fats': 0.15},
+        'Manutenção': {'protein': 0.25, 'carbs': 0.5, 'fats': 0.25}
+    }
+    
+    dist = macros.get(goal, macros['Manutenção'])
     
     return {
         'calories': round(calories),
-        'protein': round((calories * protein) / 4),  # 4 calorias por grama de proteína
-        'carbs': round((calories * carbs) / 4),      # 4 calorias por grama de carboidrato
-        'fats': round((calories * fats) / 9)         # 9 calorias por grama de gordura
+        'protein': round((calories * dist['protein']) / 4),  # 4 cal/g proteína
+        'carbs': round((calories * dist['carbs']) / 4),      # 4 cal/g carb
+        'fats': round((calories * dist['fats']) / 9)         # 9 cal/g gordura
     }
 
 def generate_workout_plan(preferences, limitations, goal, days):

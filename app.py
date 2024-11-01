@@ -13,7 +13,7 @@ from config import (
 )
 from utils import (
     initialize_ai_model, calcular_tmb, calcular_calorias_diarias,
-    criar_plano_treino, gerar_graficos_plano
+    criar_plano_treino, gerar_graficos_plano, gerar_prompt_ia
 )
 
 def setup_page():
@@ -127,14 +127,14 @@ def formulario_usuario():
             'limitacoes': limitacoes, 'duracao_plano': duracao_plano
         })
 
-def exibir_plano(dados_usuario: Dict, plano_treino: List[Dict], calorias: float):
+def exibir_plano(dados_usuario: Dict, plano_treino: List[Dict], calorias: float, recomendacoes_ia: str):
     """Exibe o plano gerado para o usuário."""
     st.markdown("""
     ## 🎉 Seu Plano Personalizado está Pronto!
     """)
     
     # Criar tabs para organizar a informação
-    tab1, tab2, tab3 = st.tabs(['📊 Visão Geral', '💪 Plano de Treino', '🥗 Nutrição'])
+    tab1, tab2, tab3, tab4 = st.tabs(['📊 Visão Geral', '💪 Plano de Treino', '🥗 Nutrição', '🤖 Recomendações IA'])
     
     with tab1:
         col1, col2, col3 = st.columns(3)
@@ -191,6 +191,47 @@ def exibir_plano(dados_usuario: Dict, plano_treino: List[Dict], calorias: float)
             st.metric("Carboidratos", f"{macros['carbs']}%")
         with col8:
             st.metric("Gorduras", f"{macros['fats']}%")
+            
+        # Adicionar mais informações nutricionais
+        st.markdown("""
+        #### 📊 Distribuição Calórica Diária
+        """)
+        
+        calorias_proteina = (calorias * macros['protein'] / 100) / 4
+        calorias_carbs = (calorias * macros['carbs'] / 100) / 4
+        calorias_gorduras = (calorias * macros['fats'] / 100) / 9
+        
+        col9, col10, col11 = st.columns(3)
+        with col9:
+            st.metric("Proteínas (g)", f"{int(calorias_proteina)}g")
+        with col10:
+            st.metric("Carboidratos (g)", f"{int(calorias_carbs)}g")
+        with col11:
+            st.metric("Gorduras (g)", f"{int(calorias_gorduras)}g")
+            
+    with tab4:
+        st.markdown("### 🤖 Recomendações Personalizadas da IA")
+        
+        # Exibir recomendações da IA
+        st.markdown(recomendacoes_ia)
+        
+        # Adicionar botão para exportar recomendações
+        st.download_button(
+            label="📥 Baixar Recomendações Completas",
+            data=recomendacoes_ia,
+            file_name=f"recomendacoes_{datetime.now().strftime('%Y%m%d')}.md",
+            mime="text/markdown"
+        )
+        
+        # Adicionar área de feedback
+        st.markdown("---")
+        st.markdown("### 📝 Feedback sobre as Recomendações")
+        feedback = st.text_area(
+            "Suas observações são importantes para melhorarmos as recomendações:",
+            placeholder="Digite aqui seu feedback sobre as recomendações recebidas..."
+        )
+        if st.button("📤 Enviar Feedback"):
+            st.success("Obrigado pelo seu feedback! Isso nos ajuda a melhorar continuamente.")
 
 def main():
     """Função principal da aplicação."""
@@ -240,8 +281,13 @@ def main():
                     dados_usuario['peso']  # Adicionando peso inicial
                 )
                 
+                # Gerar recomendações da IA
+                with st.spinner('🤖 Gerando recomendações personalizadas com IA...'):
+                    prompt = gerar_prompt_ia(dados_usuario)
+                    recomendacoes = ai_model.invoke(prompt)
+                    
                 # Exibir resultados
-                exibir_plano(dados_usuario, plano_treino, calorias)
+                exibir_plano(dados_usuario, plano_treino, calorias, recomendacoes.content)
                 
             except Exception as e:
                 st.error(f"Ocorreu um erro ao gerar o plano: {str(e)}")

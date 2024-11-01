@@ -21,9 +21,11 @@ def load_lottie_url(url: str):
     try:
         r = requests.get(url)
         if r.status_code != 200:
+            st.warning(f"Não foi possível carregar a animação.")
             return None
         return r.json()
-    except Exception:
+    except Exception as e:
+        st.warning(f"Não foi possível carregar a animação.")
         return None
 
 def initialize_ai_model(api_key):

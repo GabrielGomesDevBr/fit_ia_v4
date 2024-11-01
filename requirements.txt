@@ -11,4 +11,3 @@ requests==2.31.0
 pillow==10.2.0
 numpy==1.26.3
 hydralit_components==1.0.10
-extra-streamlit-components==0.1.60

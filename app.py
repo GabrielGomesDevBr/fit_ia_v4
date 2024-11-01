@@ -236,7 +236,8 @@ def main():
                     dados_usuario['atividades'],
                     dados_usuario['duracao_plano'],
                     dados_usuario['objetivo'],
-                    dados_usuario['limitacoes']
+                    dados_usuario['limitacoes'],
+                    dados_usuario['peso']  # Adicionando peso inicial
                 )
                 
                 # Exibir resultados
